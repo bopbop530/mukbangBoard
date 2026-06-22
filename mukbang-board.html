@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>먹어 / 먹지마 트래커</title>
+<style>
+  :root {
+    --eat: #38c6ff;       /* 먹어 sky blue */
+    --eat-glow: #7fe0ff;
+    --no: #ff3b4e;        /* 먹지마 red */
+    --no-glow: #ff7a86;
+    --neutral: #9aa7b4;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+
+  body {
+    font-family: "Segoe UI", "Malgun Gothic", system-ui, sans-serif;
+    background: radial-gradient(circle at 50% 0%, #0c1422, #05070d 70%);
+    color: #fff;
+    min-height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .wrap {
+    width: 100%;
+    max-width: 560px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* ===== slim calculator-style display ===== */
+  .display {
+    position: relative;
+    width: 100%;
+    height: 96px;
+    border-radius: 14px;
+    background: linear-gradient(160deg, #0a1120, #060a12);
+    border: 1px solid rgba(255,255,255,0.07);
+    box-shadow: 0 12px 36px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 0 28px;
+    overflow: hidden;
+    transition: box-shadow .35s ease;
+  }
+  .display::after {
+    content: "";
+    position: absolute; inset: 0;
+    background: linear-gradient(120deg, transparent, rgba(255,255,255,.05) 50%, transparent);
+    transform: translateX(-100%);
+    pointer-events: none;
+  }
+  .display.flash::after { animation: sheen .55s ease; }
+  @keyframes sheen { to { transform: translateX(100%); } }
+
+  .label {
+    font-size: clamp(26px, 6vw, 40px);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    transition: color .3s, text-shadow .3s;
+  }
+  .count {
+    font-family: "Consolas", "SF Mono", monospace;
+    font-size: clamp(40px, 9vw, 62px);
+    font-weight: 900;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    transition: color .3s, text-shadow .3s;
+  }
+  .count.bump { animation: bump .25s ease; }
+  @keyframes bump { 0%{transform:scale(1);} 40%{transform:scale(1.14);} 100%{transform:scale(1);} }
+
+  .display.eat .label { color: var(--eat); text-shadow: 0 0 6px rgba(56,198,255,.45); }
+  .display.eat .count { color: var(--eat); text-shadow: 0 0 8px rgba(127,224,255,.4); }
+  .display.eat { box-shadow: 0 0 0 1px rgba(56,198,255,.3), 0 0 50px rgba(56,198,255,.22), inset 0 0 36px rgba(56,198,255,.06); }
+
+  .display.no .label { color: var(--no); text-shadow: 0 0 6px rgba(255,59,78,.45); }
+  .display.no .count { color: var(--no); text-shadow: 0 0 8px rgba(255,122,134,.4); }
+  .display.no { box-shadow: 0 0 0 1px rgba(255,59,78,.3), 0 0 50px rgba(255,59,78,.22), inset 0 0 36px rgba(255,59,78,.06); }
+
+  .display.zero .label { color: var(--neutral); }
+  .display.zero .count { color: var(--neutral); text-shadow: 0 0 6px rgba(154,167,180,.3); }
+
+  /* ===== buttons ===== */
+  .pad {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 14px;
+  }
+  .btn {
+    position: relative;
+    border: none;
+    cursor: pointer;
+    border-radius: 12px;
+    padding: 11px 10px;
+    font-weight: 900;
+    color: #fff;
+    background: #131c2c;
+    border: 1px solid rgba(255,255,255,0.07);
+    box-shadow: 0 8px 22px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.06);
+    transition: transform .08s ease, box-shadow .25s ease, filter .2s;
+    overflow: hidden;
+    user-select: none;
+  }
+  .btn .num { font-size: clamp(19px, 4.5vw, 24px); letter-spacing: 1px; }
+  .btn small {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    opacity: .7;
+    margin-top: 3px;
+  }
+  .btn:active { transform: translateY(3px) scale(.98); }
+
+  .btn.eat { box-shadow: 0 8px 22px rgba(0,0,0,.4), 0 0 0 1px rgba(56,198,255,.25), 0 6px 26px rgba(56,198,255,.16); }
+  .btn.eat:hover { filter: brightness(1.15); box-shadow: 0 8px 28px rgba(56,198,255,.4), 0 0 0 1px rgba(56,198,255,.5); }
+  .btn.eat small { color: var(--eat-glow); }
+  .btn.no { box-shadow: 0 8px 22px rgba(0,0,0,.4), 0 0 0 1px rgba(255,59,78,.25), 0 6px 26px rgba(255,59,78,.16); }
+  .btn.no:hover { filter: brightness(1.15); box-shadow: 0 8px 28px rgba(255,59,78,.4), 0 0 0 1px rgba(255,59,78,.5); }
+  .btn.no small { color: var(--no-glow); }
+
+  .ripple {
+    position: absolute; border-radius: 50%;
+    transform: scale(0);
+    background: rgba(255,255,255,.35);
+    animation: ripple .5s linear;
+    pointer-events: none;
+  }
+  @keyframes ripple { to { transform: scale(4); opacity: 0; } }
+
+  .footer { display: flex; justify-content: center; }
+  .reset {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,.15);
+    color: rgba(255,255,255,.6);
+    border-radius: 10px;
+    padding: 9px 22px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .reset:hover { color: #fff; border-color: rgba(255,255,255,.4); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="display zero" id="display">
+      <div class="label" id="label">먹어 / 먹지마</div>
+      <div class="count" id="count">0</div>
+    </div>
+
+    <div class="pad">
+      <button class="btn eat" data-delta="1"><span class="num">140</span><small>먹어 +1</small></button>
+      <button class="btn no"  data-delta="-1"><span class="num">150</span><small>먹지마 +1</small></button>
+      <button class="btn eat" data-delta="10"><span class="num">1414</span><small>먹어 +10</small></button>
+      <button class="btn no"  data-delta="-10"><span class="num">1415</span><small>먹지마 +10</small></button>
+    </div>
+
+    <div class="footer">
+      <button class="reset" id="reset">RESET</button>
+    </div>
+  </div>
+
+<script>
+  (function () {
+    var KEY = "eat-tracker-net";
+    var net = parseInt(localStorage.getItem(KEY) || "0", 10);
+    if (isNaN(net)) net = 0;
+
+    var display = document.getElementById("display");
+    var labelEl = document.getElementById("label");
+    var countEl = document.getElementById("count");
+
+    function render(animate) {
+      if (net > 0) {
+        display.className = "display eat";
+        labelEl.textContent = "먹어";
+        countEl.textContent = net;
+      } else if (net < 0) {
+        display.className = "display no";
+        labelEl.textContent = "먹지마";
+        countEl.textContent = Math.abs(net);
+      } else {
+        display.className = "display zero";
+        labelEl.textContent = "먹어 / 먹지마";
+        countEl.textContent = "0";
+      }
+      try { localStorage.setItem(KEY, String(net)); } catch (e) {}
+
+      if (animate) {
+        countEl.classList.remove("bump");
+        void countEl.offsetWidth;
+        countEl.classList.add("bump");
+        display.classList.add("flash");
+        setTimeout(function () { display.classList.remove("flash"); }, 560);
+      }
+    }
+
+    function ripple(btn, e) {
+      var r = document.createElement("span");
+      r.className = "ripple";
+      var rect = btn.getBoundingClientRect();
+      var size = Math.max(rect.width, rect.height);
+      r.style.width = r.style.height = size + "px";
+      r.style.left = (e.clientX - rect.left - size / 2) + "px";
+      r.style.top = (e.clientY - rect.top - size / 2) + "px";
+      btn.appendChild(r);
+      setTimeout(function () { r.remove(); }, 500);
+    }
+
+    var buttons = document.querySelectorAll(".btn[data-delta]");
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].addEventListener("click", function (e) {
+        net += parseInt(this.getAttribute("data-delta"), 10);  // opposites cancel
+        ripple(this, e);
+        render(true);
+      });
+    }
+
+    document.getElementById("reset").addEventListener("click", function () {
+      net = 0;
+      render(true);
+    });
+
+    render(false);
+  })();
+</script>
+</body>
+</html>

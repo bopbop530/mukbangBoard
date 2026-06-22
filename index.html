@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>먹방 보드</title>
+<style>
+  :root {
+    --eat: #38c6ff;
+    --no: #ff3b4e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Segoe UI", "Malgun Gothic", system-ui, sans-serif;
+    background: radial-gradient(circle at 50% 0%, #0c1422, #05070d 70%);
+    color: #fff;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 36px;
+    padding: 24px;
+    overflow: hidden;
+  }
+  body::before {
+    content: "";
+    position: fixed; inset: -50%;
+    background:
+      radial-gradient(circle at 25% 30%, rgba(56,198,255,0.12), transparent 40%),
+      radial-gradient(circle at 75% 70%, rgba(255,59,78,0.12), transparent 40%);
+    animation: drift 16s ease-in-out infinite alternate;
+    z-index: 0;
+  }
+  @keyframes drift {
+    from { transform: translate(-3%, -2%) scale(1); }
+    to   { transform: translate(3%, 2%) scale(1.08); }
+  }
+
+  .title {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    line-height: 1.15;
+  }
+  .title h1 {
+    font-size: clamp(40px, 9vw, 76px);
+    font-weight: 900;
+    letter-spacing: 2px;
+  }
+  .title h1 .eat { color: var(--eat); text-shadow: 0 0 16px rgba(56,198,255,.5); }
+  .title h1 .no  { color: var(--no);  text-shadow: 0 0 16px rgba(255,59,78,.5); }
+  .title p {
+    margin-top: 12px;
+    font-size: clamp(14px, 3vw, 18px);
+    letter-spacing: 4px;
+    opacity: .55;
+    text-transform: uppercase;
+  }
+
+  .launch {
+    position: relative;
+    z-index: 1;
+    cursor: pointer;
+    border: none;
+    border-radius: 18px;
+    padding: 26px 64px;
+    font-size: clamp(22px, 5vw, 30px);
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: #fff;
+    background: linear-gradient(135deg, var(--eat), #2b8fff 45%, var(--no));
+    background-size: 200% 200%;
+    box-shadow: 0 12px 40px rgba(56,198,255,.3), 0 12px 40px rgba(255,59,78,.2);
+    animation: shimmer 6s ease infinite;
+    transition: transform .12s ease, box-shadow .25s ease, filter .2s;
+  }
+  @keyframes shimmer {
+    0%,100% { background-position: 0% 50%; }
+    50%     { background-position: 100% 50%; }
+  }
+  .launch:hover { filter: brightness(1.1); box-shadow: 0 16px 50px rgba(56,198,255,.45), 0 16px 50px rgba(255,59,78,.35); transform: translateY(-2px); }
+  .launch:active { transform: translateY(2px) scale(.98); }
+
+  .hint {
+    position: relative;
+    z-index: 1;
+    font-size: 13px;
+    letter-spacing: 1px;
+    opacity: .4;
+    min-height: 18px;
+  }
+</style>
+</head>
+<body>
+  <div class="title">
+    <h1><span class="eat">먹어</span> / <span class="no">먹지마</span></h1>
+    <p>Mukbang Tracker Board</p>
+  </div>
+
+  <button class="launch" id="launch">▶ 앱 실행 (LAUNCH)</button>
+
+  <div class="hint" id="hint"></div>
+
+<script>
+  var board = null;
+  var hint = document.getElementById("hint");
+
+  document.getElementById("launch").addEventListener("click", function () {
+    var w = 760, h = 560;
+    var left = window.screenX + Math.max(0, (window.outerWidth  - w) / 2);
+    var top  = window.screenY + Math.max(0, (window.outerHeight - h) / 2);
+    var features = "width=" + w + ",height=" + h + ",left=" + left + ",top=" + top +
+                   ",menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes";
+
+    // reuse the same child window if already open
+    board = window.open("mukbang-board.html", "mukbangBoard", features);
+
+    if (!board) {
+      hint.textContent = "팝업이 차단되었습니다. 팝업 허용 후 다시 시도하세요.";
+    } else {
+      hint.textContent = "보드 창이 열렸습니다.";
+      board.focus();
+    }
+  });
+</script>
+</body>
+</html>
